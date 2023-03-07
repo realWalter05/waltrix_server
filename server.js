@@ -10,20 +10,30 @@ app.get("/get_api_links", async (req, res) => {
     const season = req.query.s;
     const episode = req.query.e;
 
-    if (!id)
+    if (!id) {
         // Return if ID missing
         res.json({
                 "status" : "error",
-                "reason" : "id_missing",
+                "reason" : "id_missing"
         });
+    }
 
     // Get response based on series or movies
-    let url = "https://seapi.link/?type=tmdb&id="+id;+"&max_results=1";
+    //let url = "https://seapi.link/?type=tmdb&id="+id;+"&max_results=1";
+    let url = "https://getsuperembed.link/?video_id="+id+"&tmdb=1";
     if (season != undefined && episode != undefined)
-        url = "https://seapi.link/?type=tmdb&id="+id+"&season="+season+"&episode="+episode+"&max_results=1";
+        //url = "https://seapi.link/?type=tmdb&id="+id+"&season="+season+"&episode="+episode+"&max_results=1";
+        url = "https://getsuperembed.link/?video_id="+id+"&tmdb=1&season=1&episode=1";
 
     // Fetch and get json
     const apiLinks = await fetch(url);
+    if (!apiLinks) {
+        // Return if API error missing
+        res.json({
+            "status" : "error",
+            "reason" : "api_error"
+    });
+    }
     const jsonLinks = await apiLinks.json();
     res.json({
         "status" : "success",
