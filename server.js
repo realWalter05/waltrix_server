@@ -5,57 +5,65 @@ const cors = require("cors");
 app.use(cors())
 
 app.get("/get_api_links", async (req, res) => {
-    // First layer of stealing the links (https://seapi.link)
+    // First layer of stealing the links
     const id = req.query.id;
     const season = req.query.s;
     const episode = req.query.e;
 
     if (!id) {
         // Return if ID missing
-        res.json({
+        return res.json({
                 "status" : "error",
                 "reason" : "id_missing"
         });
     }
 
     // Get response based on series or movies
-    //let url = "https://seapi.link/?type=tmdb&id="+id;+"&max_results=1";
     let url = "https://getsuperembed.link/?video_id="+id+"&tmdb=1";
     if (season != undefined && episode != undefined)
-        //url = "https://seapi.link/?type=tmdb&id="+id+"&season="+season+"&episode="+episode+"&max_results=1";
         url = "https://getsuperembed.link/?video_id="+id+"&tmdb=1&season=1&episode=1";
 
     // Fetch and get json
     const apiLinks = await fetch(url);
     if (!apiLinks) {
         // Return if API error missing
-        res.json({
+        return res.json({
             "status" : "error",
             "reason" : "api_error"
     });
     }
-    const jsonLinks = await apiLinks.json();
-    res.json({
+    const videoLink = await apiLinks.text();
+    return res.json({
         "status" : "success",
-        "response" : jsonLinks
+        "response" : videoLink
     });
 })
 
-app.get("/", async (req, res) => {
-    console.log(req.query.url);
-    const url = 'https://seapi.link/?type=tmdb&id='+req.query.tmdb_id;+'&max_results=1';
-    const response = await fetch(url);
-    const data = await response.json();
+app.get("/scrape", async (req, res) => {
+    const puppeteer = require('puppeteer')
 
-    const first = data?.results.filter(result => result.server == "upstream");
-    const urlNext = first[0].url;
-    const anotherResponse = await fetch(urlNext);
-    const anotherRes = await anotherResponse.text();
-    if (!anotherRes.includes("window.atob(")) {
-        res.json({"pirate_link" : "", "status" : "captcha"});
+    async function getVisual() {
+        try {
+            const URL = req.query.url
+            const browser = await puppeteer.launch()
+
+            const page = await browser.newPage()
+            await page.goto(URL)
+
+            await page.click("#play")
+            let v = await page.$(".input-button-click");
+            console.log(v);
+
+            await page.screenshot({ path: 'screenshot.png' })
+            await page.pdf({ path: 'page.pdf' })
+
+            await browser.close()
+        } catch (error) {
+            console.error(error)
+        }
     }
-    const realLink = anotherRes.split("window.atob('")[1].split("')+")[0];
-    res.json({"pirate_link" : realLink, "status" : "success"});
+
+    getVisual()
 })
 
 app.listen(5000, () => { console.log("Server is running on port 5000") });
